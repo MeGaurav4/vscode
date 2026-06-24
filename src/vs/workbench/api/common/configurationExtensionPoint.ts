@@ -11,7 +11,7 @@ import { ExtensionsRegistry, IExtensionPointUser } from '../../services/extensio
 import { IConfigurationNode, IConfigurationRegistry, Extensions, validateProperty, ConfigurationScope, OVERRIDE_PROPERTY_REGEX, IConfigurationDefaults, configurationDefaultsSchemaId, IConfigurationDelta, getDefaultValue, getAllConfigurationProperties, parseScope, EXTENSION_UNIFICATION_EXTENSION_IDS, overrideIdentifiersFromKey } from '../../../platform/configuration/common/configurationRegistry.js';
 import { IJSONContributionRegistry, Extensions as JSONExtensions } from '../../../platform/jsonschemas/common/jsonContributionRegistry.js';
 import { workspaceSettingsSchemaId, launchSchemaId, tasksSchemaId, mcpSchemaId } from '../../services/configuration/common/configuration.js';
-import { isObject, isUndefined } from '../../../base/common/types.js';
+import { hasKey, isObject, isUndefined } from '../../../base/common/types.js';
 import { ExtensionIdentifierMap, IExtensionManifest } from '../../../platform/extensions/common/extensions.js';
 import { IStringDictionary } from '../../../base/common/collections.js';
 import { Extensions as ExtensionFeaturesExtensions, IExtensionFeatureTableRenderer, IExtensionFeaturesRegistry, IRenderedData, IRowData, ITableData } from '../../services/extensionManagement/common/extensionFeatures.js';
@@ -307,8 +307,16 @@ configurationExtPoint.setHandler((extensions, { added, removed }) => {
 					extension.collector.error(nls.localize('invalid.property', "configuration.properties property '{0}' must be an object", key));
 					continue;
 				}
-				if (extensionConfigurationPolicy?.[key]) {
-					propertyConfiguration.policy = extensionConfigurationPolicy?.[key];
+				const policyEntry = extensionConfigurationPolicy?.[key];
+				if (policyEntry) {
+					// A full policy entry declares catalog metadata (`category`); a reference entry
+					// carries only the owning policy `name`. References attach this setting to a
+					// policy *owned* by an in-code setting (whose `value` callback JSON cannot carry).
+					if (hasKey(policyEntry, { category: true })) {
+						propertyConfiguration.policy = policyEntry;
+					} else {
+						propertyConfiguration.policyReference = policyEntry;
+					}
 				}
 				if (propertyConfiguration.tags?.some(tag => tag.toLowerCase() === 'onexp')) {
 					propertyConfiguration.experiment = {

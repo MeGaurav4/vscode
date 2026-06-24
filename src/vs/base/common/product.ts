@@ -5,7 +5,7 @@
 
 import { IStringDictionary } from './collections.js';
 import { PlatformName } from './platform.js';
-import { IPolicy } from './policy.js';
+import { IPolicy, IPolicyReference } from './policy.js';
 
 export interface IBuiltInExtension {
 	readonly name: string;
@@ -257,7 +257,13 @@ export interface IProductConfiguration {
 
 	readonly remoteDefaultExtensionsIfInstalledLocally?: string[];
 
-	readonly extensionConfigurationPolicy?: IStringDictionary<IPolicy>;
+	/**
+	 * Maps an extension-contributed setting key to either a full enterprise {@link IPolicy}
+	 * (the setting *owns* the policy) or an {@link IPolicyReference} (the setting attaches to a
+	 * policy *owned* by an in-code setting). References let a `product.json`-provided setting be
+	 * governed by a policy whose `value` callback — which JSON cannot carry — lives in code.
+	 */
+	readonly extensionConfigurationPolicy?: IStringDictionary<IPolicy | IPolicyReference>;
 
 	readonly onboardingKeymaps?: readonly IProductOnboardingKeymap[];
 	readonly onboardingThemes?: readonly IProductOnboardingTheme[];
